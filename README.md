@@ -27,3 +27,9 @@ Die App landet in `~/Applications/OnionDesktopTools.app`. Downloads und Sicherun
 `~/Library/Application Support/OnionDesktopTools`.
 
 Tests: `swift test --scratch-path ~/Library/Developer/OnionDesktopTools/test-build` und `tools/selftest.sh`.
+
+## Lizenz und Dank
+
+Dieses Projekt ist eine Mac-Umsetzung von [Onion Desktop Tools](https://github.com/schmurtzm/Onion-Desktop-Tools)
+von Schmurtz und steht wie das Original unter der [GNU GPL v3](LICENSE).
+Onion OS stammt vom [Onion-Team](https://github.com/OnionUI/Onion).
