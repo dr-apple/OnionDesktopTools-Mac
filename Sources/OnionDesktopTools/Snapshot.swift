@@ -1,6 +1,7 @@
 import AppKit
 import IOKit.pwr_mgt
 import SwiftUI
+import OnionDesktopToolsKit
 
 /// Screenshot mode for agents.
 ///   APP_STORE=/tmp/test.store APP_SNAPSHOT=/tmp/shots ~/Applications/OnionDesktopTools.app/Contents/MacOS/OnionDesktopTools
@@ -29,6 +30,14 @@ enum Snapshot {
             IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
                                         IOPMAssertionLevel(kIOPMAssertionLevelOn), "Snapshots" as CFString, &awake)
             try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            if let fake = env["APP_FAKE_CARD"], fake.hasPrefix("/tmp") {
+                FakeCard.makeOnion(at: URL(fileURLWithPath: fake, isDirectory: true))
+                await model.refreshCards()
+                model.activity = Activity(title: "")
+                _ = try? await model.backup(parts: Set(BackupPart.allCases), description: "Vor dem Update auf 4.3")
+                model.activity = nil
+                model.note("Onion 4.3.1-1 heruntergeladen.", .success)
+            }
             try? await Task.sleep(for: .seconds(1.5))
             for mode in ["light", "dark"] {
                 NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)

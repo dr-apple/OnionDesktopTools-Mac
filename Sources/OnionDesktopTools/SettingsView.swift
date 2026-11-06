@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The Settings window (Command-Comma). One tab per topic, at most about
@@ -40,8 +41,8 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: "General"
-        case .appearance: "Appearance"
+        case .general: "Allgemein"
+        case .appearance: "Darstellung"
         }
     }
 
@@ -54,11 +55,23 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 }
 
 struct GeneralSettings: View {
-    @AppStorage("confirmDelete") private var confirmDelete = true
+    @AppStorage("cleanMacFiles") private var cleanMacFiles = true
+    @AppStorage("playSounds") private var playSounds = true
 
     var body: some View {
-        Section("Items") {
-            Toggle("Ask before deleting items", isOn: $confirmDelete)
+        Section {
+            Toggle("macOS-Hilfsdateien nach dem Schreiben entfernen", isOn: $cleanMacFiles)
+            Toggle("Ton bei Erfolg und Fehler", isOn: $playSounds)
+        } footer: {
+            Text("Der Finder legt „._“-Dateien auf FAT32-Karten an. Der Miyoo zeigt sie als kaputte Spiele.")
+        }
+        Section("Ordner") {
+            LabeledContent("Downloads") {
+                Button("Im Finder zeigen") { NSWorkspace.shared.open(Store.downloads) }
+            }
+            LabeledContent("Sicherungen") {
+                Button("Im Finder zeigen") { NSWorkspace.shared.open(Store.backups) }
+            }
         }
     }
 }

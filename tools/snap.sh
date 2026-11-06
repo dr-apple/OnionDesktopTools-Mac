@@ -1,14 +1,11 @@
 #!/bin/zsh
-# Snapshots of every page in light and dark, with seed data, on a fresh test store.
+# Snapshots of every page in light and dark, with a pretend Onion SD card in /tmp.
 # Usage: tools/snap.sh            all pages
-#        APP_SNAPSHOT_PAGES=all,settings tools/snap.sh
+#        APP_SNAPSHOT_PAGES=install,settings tools/snap.sh
 set -u
 app=~/Applications/OnionDesktopTools.app/Contents/MacOS/OnionDesktopTools
-store=/tmp/OnionDesktopTools-test.store
 shots=/tmp/OnionDesktopTools-shots
-# A crashed run leaves saved window state, and the next launch would wait on a "reopen windows?" alert.
 rm -rf ~/Library/Saved\ Application\ State/local.onion.desktoptools.savedState
-# Seed data only fills an empty store, so start from nothing.
-rm -f $store $store-shm $store-wal
-rm -rf $shots
-APP_STORE=$store APP_SEED=1 APP_SNAPSHOT=$shots $app
+rm -rf /tmp/odt-snap /tmp/odt-snap-card $shots
+mkdir -p /tmp/odt-snap-card
+APP_STORE=/tmp/odt-snap APP_FAKE_CARD=/tmp/odt-snap-card APP_SNAPSHOT=$shots $app

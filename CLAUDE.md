@@ -1,7 +1,10 @@
 # OnionDesktopTools
 
-A native macOS app in SwiftUI. It runs on this Mac only, with a local
-SwiftData database and no server.
+A native macOS port of Onion Desktop Tools (github.com/schmurtzm/Onion-Desktop-Tools,
+PowerShell/Windows) in SwiftUI. It prepares SD cards for the Miyoo Mini with Onion OS:
+download, format (diskutil), install (unzip), backup/restore, Onion flags, package manager, Wi-Fi.
+No database: downloads and backups live in ~/Library/Application Support/OnionDesktopTools.
+UI language is German.
 
 ## Layout
 
@@ -16,12 +19,13 @@ SwiftData database and no server.
 
 - Build and install: `./build.sh`. Add `--open` to restart the app with the new build. The build shows warnings; fix them.
 - Unit tests: `swift test --scratch-path ~/Library/Developer/OnionDesktopTools/test-build`.
-- Self-test (the app's real functions on a /tmp store): `tools/selftest.sh`. Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
+- Self-test (the app's real functions on a pretend card in /tmp, APP_FAKE_CARD): `tools/selftest.sh`. Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
 - After every UI change, take snapshots with sample data and look at them: `tools/snap.sh`.
   It writes `/tmp/OnionDesktopTools-shots/<page>-light.png` and `-dark.png` for every sidebar page, and `settings-<tab>-light.png` and `-dark.png` for every Settings tab, then quits. `APP_SNAPSHOT_PAGES=all,settings tools/snap.sh` limits the pages.
   For a panel, sheet, or popover, add a capture to `Snapshot.swift` like the Settings loop.
-- Snapshots, seed data, and the self-test refuse to run without `APP_STORE` in /tmp.
-- Never test against the real database in `~/Library/Application Support/OnionDesktopTools/`.
+- Snapshots and the self-test refuse to run without `APP_STORE` and `APP_FAKE_CARD` in /tmp.
+- Never format, eject, or write to a real SD card in tests. The pretend card has device "fake", and format/eject/check refuse it.
+- macOS writes "._" files on FAT32 (unzip makes one per file). `MacJunk.clean` (find(1)) removes them; FileManager's enumerator hides them.
 - Then check the grid: `tools/grid-lint.sh` and `swift tools/check-layout.swift /tmp/OnionDesktopTools-shots/*-layout.json`. Both print PASS.
 - A change is done when the build has no errors, the grid checks pass, and you looked at the light and dark snapshots.
 

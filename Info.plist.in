@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>local.onion.desktoptools</string>
-<key>CFBundleName</key><string>OnionDesktopTools</string>
-<key>CFBundleDisplayName</key><string>OnionDesktopTools</string>
+<key>CFBundleName</key><string>Onion Desktop Tools</string>
+<key>CFBundleDisplayName</key><string>Onion Desktop Tools</string>
 <key>CFBundleExecutable</key><string>OnionDesktopTools</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIconName</key><string>AppIcon</string>
@@ -11,7 +11,9 @@
 <key>CFBundleShortVersionString</key><string>0.1</string>
 <key>CFBundleVersion</key><string>__BUILD__</string>
 <key>LSMinimumSystemVersion</key><string>26.0</string>
-<key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
+<key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
+<key>NSRemovableVolumesUsageDescription</key><string>Onion Desktop Tools liest und beschreibt die SD-Karte deines Miyoo Mini.</string>
+<key>CFBundleDevelopmentRegion</key><string>de</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>

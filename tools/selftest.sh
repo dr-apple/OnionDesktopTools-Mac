@@ -1,7 +1,7 @@
 #!/bin/zsh
-# Runs the in-app self-test against a fresh store in /tmp. Exit code 0 when every check passed.
+# Runs the in-app self-test on a pretend SD card in /tmp. Exit code 0 when every check passed.
 set -u
 rm -rf ~/Library/Saved\ Application\ State/local.onion.desktoptools.savedState
-store=/tmp/OnionDesktopTools-self.store
-rm -f $store $store-shm $store-wal
-APP_STORE=$store ~/Applications/OnionDesktopTools.app/Contents/MacOS/OnionDesktopTools --selftest
+rm -rf /tmp/odt-self /tmp/odt-self-card /tmp/odt-self-card-restore
+mkdir -p /tmp/odt-self-card
+APP_STORE=/tmp/odt-self APP_FAKE_CARD=/tmp/odt-self-card ~/Applications/OnionDesktopTools.app/Contents/MacOS/OnionDesktopTools --selftest

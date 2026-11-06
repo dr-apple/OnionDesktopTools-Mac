@@ -1,38 +1,61 @@
 import AppKit
-import SwiftData
 import SwiftUI
 
-// OnionDesktopTools
-//   OnionDesktopTools                      the app
-//   APP_STORE=<file> OnionDesktopTools     use another database (tests, experiments)
-//   APP_SNAPSHOT=<dir> OnionDesktopTools   save a PNG of every sidebar page and Settings tab in light and dark mode, then quit
-//   APP_SEED=1 OnionDesktopTools           fill an empty /tmp store with sample items (tools/snap.sh)
-//   OnionDesktopTools --selftest           run the self-test on a /tmp store and quit with 0 or 1 (tools/selftest.sh)
-//   APP_ACCENT=<id> OnionDesktopTools      run with another accent from Theme.all (UI/Theme.swift)
-//   APP_GRID=1 OnionDesktopTools           draw the 8 pt grid and the layout probes over the window
+// Onion Desktop Tools for Mac
+//   OnionDesktopTools                        the app
+//   APP_STORE=<dir> OnionDesktopTools        keep downloads and backups in another folder (tests, snapshots)
+//   APP_FAKE_CARD=<dir> OnionDesktopTools    add a folder as a pretend SD card (tests, snapshots)
+//   APP_SNAPSHOT=<dir> OnionDesktopTools     save a PNG of every page in light and dark mode, then quit
+//   OnionDesktopTools --selftest             run the self-test on /tmp folders and quit with 0 or 1 (tools/selftest.sh)
+//   APP_GRID=1 OnionDesktopTools             draw the grid and layout probes over the window
 
 @main
 struct OnionDesktopToolsApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @State private var model = AppModel(container: Store.makeContainer())
+    @State private var model = AppModel()
 
     var body: some Scene {
-        Window("OnionDesktopTools", id: "main") {
+        Window("Onion Desktop Tools", id: "main") {
             ContentView()
                 .environment(model)
                 .themed()
                 .overlay { if GridOverlay.enabled { GridOverlay() } }
-                .frame(minWidth: 760, minHeight: 480)
+                .frame(minWidth: 860, minHeight: 600)
         }
-        .modelContainer(model.container)
-        .defaultSize(width: 1100, height: 720)
+        .defaultSize(width: 1080, height: 760)
         .windowToolbarStyle(.unified)
         .commands {
             SidebarCommands()
             ToolbarCommands()
-            CommandGroup(replacing: .newItem) {
-                Button("New Item") { model.addItem() }
-                    .keyboardShortcut("n")
+            CommandGroup(replacing: .newItem) {}
+            CommandMenu("SD-Karte") {
+                Button("Karten neu suchen") { Task { await model.refreshCards() } }
+                    .keyboardShortcut("r")
+                    .disabled(model.isBusy)
+                Button("Auswerfen") { model.eject() }
+                    .keyboardShortcut("e")
+                    .disabled(model.isBusy || !model.cardIsReal || model.root == nil)
+                Divider()
+                Button("macOS-Hilfsdateien entfernen") { model.cleanMacFiles() }
+                    .keyboardShortcut("k", modifiers: [.command, .shift])
+                    .disabled(model.isBusy || model.root == nil)
+                Button("Auf Fehler prüfen") { model.checkDisk(repair: false) }
+                    .disabled(model.isBusy || !model.cardIsReal)
+                Button("In FAT32 formatieren…") { model.confirmFormat() }
+                    .keyboardShortcut("f", modifiers: [.command, .shift])
+                    .disabled(model.isBusy || !model.cardIsReal)
+                Divider()
+                Button("Im Finder öffnen") { if let root = model.root { NSWorkspace.shared.open(root) } }
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
+                    .disabled(model.root == nil)
+            }
+            CommandGroup(after: .sidebar) {
+                ForEach(Array(SidebarItem.allCases.enumerated()), id: \.element) { index, page in
+                    if index < 9 {
+                        Button(page.title) { model.sidebar = page }
+                            .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+                    }
+                }
             }
         }
 
@@ -57,30 +80,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {
         if SelfTest.requested { exit(SelfTest.exitCode) }
-    }
-}
-
-/// Where the data lives: ~/Library/Application Support/OnionDesktopTools/OnionDesktopTools.store
-enum Store {
-    /// True when APP_STORE points somewhere else (tests, snapshots, seed data).
-    static var isOverridden: Bool {
-        !(ProcessInfo.processInfo.environment["APP_STORE"] ?? "").isEmpty
-    }
-
-    static var url: URL {
-        if let path = ProcessInfo.processInfo.environment["APP_STORE"], !path.isEmpty {
-            return URL(fileURLWithPath: path)
-        }
-        let dir = URL.applicationSupportDirectory.appending(path: "OnionDesktopTools", directoryHint: .isDirectory)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appending(path: "OnionDesktopTools.store")
-    }
-
-    static func makeContainer() -> ModelContainer {
-        do {
-            return try ModelContainer(for: Item.self, configurations: ModelConfiguration(url: url))
-        } catch {
-            fatalError("Could not open the database at \(url.path): \(error)")
-        }
     }
 }
