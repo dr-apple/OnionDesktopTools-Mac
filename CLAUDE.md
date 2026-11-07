@@ -3,7 +3,7 @@
 A native macOS port of Onion Desktop Tools (github.com/schmurtzm/Onion-Desktop-Tools,
 PowerShell/Windows) in SwiftUI. It prepares SD cards for the Miyoo Mini with Onion OS:
 download, format (diskutil), install (unzip), backup/restore, Onion flags, package manager, Wi-Fi.
-No database: downloads and backups live in ~/Library/Application Support/OnionDesktopTools.
+No database: downloads and backups live in ~/Library/Application Support/OnionDesktopTools, or in folders chosen in Settings (`Store.Folder`, UserDefaults `folder.Downloads` / `folder.Backups`; ignored when APP_STORE is set).
 UI language is German.
 
 ## Layout

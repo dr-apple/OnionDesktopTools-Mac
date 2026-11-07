@@ -64,14 +64,44 @@ enum Store {
         return dir
     }
 
-    static var downloads: URL { folder("Downloads") }
-    static var backups: URL { folder("Backups") }
+    /// A folder people can move in Settings. The chosen path is saved in UserDefaults
+    /// under `key`; empty means the default inside the data directory.
+    enum Folder: String, CaseIterable, Identifiable {
+        case downloads = "Downloads", backups = "Backups"
 
-    private static func folder(_ name: String) -> URL {
-        let url = dataDirectory.appending(path: name, directoryHint: .isDirectory)
-        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        return url
+        var id: String { rawValue }
+        var key: String { "folder.\(rawValue)" }
+        var title: String { self == .downloads ? "Downloads" : "Sicherungen" }
+        var defaultURL: URL { dataDirectory.appending(path: rawValue, directoryHint: .isDirectory) }
+
+        /// The folder people chose, or nil when they use the default (or tests override the store).
+        var customURL: URL? {
+            guard !isOverridden, let path = UserDefaults.standard.string(forKey: key), !path.isEmpty else { return nil }
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+
+        /// False when the chosen folder is gone, for example on an external drive that is not connected.
+        var isAvailable: Bool {
+            guard let customURL else { return true }
+            var isDir: ObjCBool = false
+            return FileManager.default.fileExists(atPath: customURL.path, isDirectory: &isDir) && isDir.boolValue
+        }
+
+        /// Where files go now. Falls back to the default while the chosen folder is missing,
+        /// so the app never creates folders in /Volumes for a drive that is not there.
+        var url: URL {
+            let url = isAvailable ? (customURL ?? defaultURL) : defaultURL
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            return url
+        }
+
+        func set(_ url: URL?) {
+            if let url { UserDefaults.standard.set(url.path, forKey: key) } else { UserDefaults.standard.removeObject(forKey: key) }
+        }
     }
+
+    static var downloads: URL { Folder.downloads.url }
+    static var backups: URL { Folder.backups.url }
 }
 
 struct LogLine: Identifiable {

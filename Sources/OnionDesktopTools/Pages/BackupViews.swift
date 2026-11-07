@@ -126,6 +126,7 @@ struct RestoreView: View {
         }
         .onAppear(perform: reload)
         .onChange(of: model.activity == nil) { reload() }
+        .onChange(of: model.cardRevision) { reload() }
         .toolbar {
             ToolbarItem(placement: .secondaryAction) {
                 Button("Sicherungsordner", systemImage: "folder") { model.revealInFinder(Store.backups) }

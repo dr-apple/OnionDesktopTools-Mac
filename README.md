@@ -41,7 +41,7 @@ Voraussetzungen: macOS 26, Swift 6.2 (Xcode Command Line Tools).
 ```
 
 Die App landet in `~/Applications/OnionDesktopTools.app`. Downloads und Sicherungen liegen in
-`~/Library/Application Support/OnionDesktopTools`.
+`~/Library/Application Support/OnionDesktopTools`. Beide Ordner lassen sich in den Einstellungen ändern.
 
 Release bauen: `tools/release.sh 0.1.0` (Universal-App, ad hoc signiert, Zip in `dist/`).
 

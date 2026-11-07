@@ -65,13 +65,82 @@ struct GeneralSettings: View {
         } footer: {
             Text("Der Finder legt „._“-Dateien auf FAT32-Karten an. Der Miyoo zeigt sie als kaputte Spiele.")
         }
-        Section("Ordner") {
-            LabeledContent("Downloads") {
-                Button("Im Finder zeigen") { NSWorkspace.shared.open(Store.downloads) }
+        Section {
+            ForEach(Store.Folder.allCases) { FolderRow(folder: $0) }
+        } header: {
+            Text("Ordner")
+        } footer: {
+            Text("Vorhandene Dateien bleiben beim Wechsel im alten Ordner. Ist ein gewählter Ordner nicht erreichbar, etwa auf einem nicht angeschlossenen Laufwerk, nutzt die App den Standardordner.")
+        }
+    }
+}
+
+/// One folder in Settings: where it is, and buttons to change, reset, and show it.
+struct FolderRow: View {
+    let folder: Store.Folder
+    @Environment(AppModel.self) private var model
+    /// Same key Store reads, so the row redraws when the folder changes.
+    @AppStorage private var path: String
+    @State private var problem: String?
+
+    init(folder: Store.Folder) {
+        self.folder = folder
+        _path = AppStorage(wrappedValue: "", folder.key)
+    }
+
+    private var shown: URL { folder.isAvailable ? (folder.customURL ?? folder.defaultURL) : folder.defaultURL }
+
+    var body: some View {
+        LabeledContent {
+            HStack(spacing: Space.sm) {
+                if !path.isEmpty {
+                    Button("Standard") { change(to: nil) }
+                        .help("Wieder den Standardordner in „Application Support“ nutzen")
+                }
+                Button("Ändern …") { choose() }
+                Button("Im Finder zeigen", systemImage: "folder") { NSWorkspace.shared.open(folder.url) }
+                    .labelStyle(.iconOnly)
+                    .help("\(folder.title)-Ordner im Finder zeigen")
             }
-            LabeledContent("Sicherungen") {
-                Button("Im Finder zeigen") { NSWorkspace.shared.open(Store.backups) }
+        } label: {
+            Text(folder.title)
+            Text((shown.path as NSString).abbreviatingWithTildeInPath)
+                .truncationMode(.middle)
+                .lineLimit(1)
+                .help(shown.path)
+            if !folder.isAvailable {
+                Label("„\(URL(fileURLWithPath: path).lastPathComponent)“ ist nicht erreichbar.", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+            if let problem {
+                Label(problem, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
             }
         }
+    }
+
+    private func choose() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Auswählen"
+        panel.message = "Ordner für \(folder.title) wählen"
+        panel.directoryURL = folder.url
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard FileManager.default.isWritableFile(atPath: url.path) else {
+            problem = "In „\(url.lastPathComponent)“ darf die App nicht schreiben."
+            return
+        }
+        change(to: url)
+    }
+
+    private func change(to url: URL?) {
+        problem = nil
+        folder.set(url)
+        path = url?.path ?? ""
+        model.note("\(folder.title)-Ordner: \(folder.url.path)")
+        if folder == .downloads { model.refreshDownloads() }
+        model.cardRevision += 1
     }
 }
