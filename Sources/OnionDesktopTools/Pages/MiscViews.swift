@@ -139,8 +139,12 @@ struct AboutView: View {
                         .frame(width: 64, height: 64)
                     VStack(alignment: .leading, spacing: Space.xs) {
                         Text("Onion Desktop Tools für Mac").font(.title2.bold())
-                        Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–")")
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: Space.sm) {
+                            Text("Version \(Updater.shared.currentVersion)")
+                                .foregroundStyle(.secondary)
+                            Button("Nach Updates suchen …") { Task { await Updater.shared.check(userInitiated: true) } }
+                                .buttonStyle(.link)
+                        }
                         Text("Mac-Umsetzung von Onion Desktop Tools von Schmurtz (Onion Team). Bereitet SD-Karten für den Miyoo Mini und Miyoo Mini Plus mit Onion OS vor.")
                     }
                 }

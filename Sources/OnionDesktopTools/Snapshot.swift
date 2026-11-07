@@ -61,6 +61,24 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("update") == true {
+                let updater = Updater.shared
+                updater.release = AppRelease(version: "0.3.0", tag: "v0.3.0", isPrerelease: true, fileName: "OnionDesktopTools-0.3.0.zip",
+                                             size: 3_300_000, downloadURL: AppUpdate.releasesPage, pageURL: AppUpdate.releasesPage,
+                                             notes: "**Neu:** Ordner für Downloads und Sicherungen wählbar.\n\n- Automatische Updates\n- Kleinere Korrekturen")
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    for (name, phase) in [("available", Updater.Phase.available), ("ready", .ready)] {
+                        updater.phase = phase
+                        updater.showSheet = true
+                        try? await Task.sleep(for: .seconds(1))
+                        let main = NSApp.windows.first { $0.canBecomeMain && !$0.isSheet }
+                        capture(to: "\(dir)/update-\(name)-\(mode).png", window: main?.attachedSheet)
+                    }
+                }
+                updater.showSheet = false
+                try? await Task.sleep(for: .seconds(0.5))
+            }
             print("SNAPSHOT done \(dir)")
             // An open sheet refuses terminate, and the run would wait forever.
             for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet) } }

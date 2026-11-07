@@ -29,6 +29,9 @@ struct ContentView: View {
             guard !model.isBusy else { return }
             Task { await model.refreshCards() }
         }
+        .sheet(isPresented: Binding(get: { Updater.shared.showSheet }, set: { Updater.shared.showSheet = $0 })) {
+            UpdateSheet(updater: Updater.shared)
+        }
         .alert(model.confirmation?.title ?? "", isPresented: Binding(
             get: { model.confirmation != nil }, set: { if !$0 { model.confirmation = nil } }),
                presenting: model.confirmation) { confirmation in

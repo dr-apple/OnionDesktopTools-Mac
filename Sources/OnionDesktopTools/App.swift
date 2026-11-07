@@ -8,6 +8,7 @@ import SwiftUI
 //   APP_SNAPSHOT=<dir> OnionDesktopTools     save a PNG of every page in light and dark mode, then quit
 //   OnionDesktopTools --selftest             run the self-test on /tmp folders and quit with 0 or 1 (tools/selftest.sh)
 //   APP_GRID=1 OnionDesktopTools             draw the grid and layout probes over the window
+//   APP_UPDATE_FEED=<url> OnionDesktopTools  check a test release list instead of GitHub (update test)
 
 @main
 struct OnionDesktopToolsApp: App {
@@ -28,6 +29,10 @@ struct OnionDesktopToolsApp: App {
             SidebarCommands()
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(after: .appInfo) {
+                Button("Nach Updates suchen …") { Task { await Updater.shared.check(userInitiated: true) } }
+                    .keyboardShortcut("u", modifiers: [.command, .shift])
+            }
             CommandMenu("SD-Karte") {
                 Button("Karten neu suchen") { Task { await model.refreshCards() } }
                     .keyboardShortcut("r")
@@ -73,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Started from a terminal, the process is not a foreground app yet.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
+        Updater.shared.start()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
@@ -80,5 +86,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {
         if SelfTest.requested { exit(SelfTest.exitCode) }
+        Updater.shared.installIfPending()
     }
 }

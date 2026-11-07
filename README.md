@@ -28,6 +28,9 @@ Bereitet SD-Karten für Miyoo Mini / Miyoo Mini Plus mit [Onion OS](https://gith
    xattr -dr com.apple.quarantine /Applications/OnionDesktopTools.app
    ```
 
+Ab Version 0.2.0 sucht die App selbst nach Updates und installiert sie auf Wunsch (Einstellungen › Updates
+oder Menü „Onion Desktop Tools › Nach Updates suchen …“). Von 0.1.0 musst du einmal von Hand aktualisieren.
+
 > **Frühe Version.** Formatieren und Auswerfen sind bisher nur mit Disk-Images getestet, nicht mit
 > echten SD-Karten. Vor dem Formatieren prüft die App, dass es eine Wechselkarte ist, und fragt nach.
 > Sichere wichtige Spielstände trotzdem vorher.

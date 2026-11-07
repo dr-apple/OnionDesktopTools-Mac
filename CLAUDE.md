@@ -5,6 +5,7 @@ PowerShell/Windows) in SwiftUI. It prepares SD cards for the Miyoo Mini with Oni
 download, format (diskutil), install (unzip), backup/restore, Onion flags, package manager, Wi-Fi.
 No database: downloads and backups live in ~/Library/Application Support/OnionDesktopTools, or in folders chosen in Settings (`Store.Folder`, UserDefaults `folder.Downloads` / `folder.Backups`; ignored when APP_STORE is set).
 UI language is German.
+Self-update: `Updater.swift` reads the GitHub releases of dr-apple/OnionDesktopTools-Mac (asset `OnionDesktopTools-<version>.zip`, tag `v<version>`), checks SHA-256, bundle id, version, and signature, then swaps the bundle after quitting. Release with `tools/release.sh <version>` after bumping `CFBundleShortVersionString` in `Info.plist.in`.
 
 ## Layout
 
