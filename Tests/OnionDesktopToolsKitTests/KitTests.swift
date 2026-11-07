@@ -52,6 +52,28 @@ import Testing
     #expect(DiskUtil.isCandidate(info: ["VirtualOrPhysical": "Physical", "RemovableMedia": true, "Internal": true, "Size": 32_000_000_000]))
     #expect(!DiskUtil.isCandidate(info: ["VirtualOrPhysical": "Physical", "RemovableMedia": false, "Internal": true, "Size": 1_000_000_000_000]))
     #expect(!DiskUtil.isCandidate(info: ["VirtualOrPhysical": "Virtual", "Internal": false, "Size": 1_000]))
+    // Built-in SD reader.
+    #expect(DiskUtil.isCandidate(info: ["VirtualOrPhysical": "Physical", "BusProtocol": "Secure Digital", "Internal": true, "Size": 64_000_000_000]))
+}
+
+/// A Samsung USB SSD: ejectable and external, but no removable media. It must never be offered.
+@Test func externalSSDIsNoCard() throws {
+    let info: [String: Any] = ["VirtualOrPhysical": "Physical", "RemovableMedia": false, "Removable": false,
+                               "RemovableMediaOrExternalDevice": true, "Ejectable": true, "Internal": false,
+                               "BusProtocol": "USB", "Size": 256_060_514_304, "DeviceIdentifier": "disk6"]
+    #expect(!DiskUtil.isCandidate(info: info))
+    let list: [String: Any] = ["WholeDisks": ["disk6", "disk7"], "AllDisksAndPartitions": [
+        ["DeviceIdentifier": "disk6", "Content": "GUID_partition_scheme", "Size": 256_060_514_304, "Partitions": [
+            ["DeviceIdentifier": "disk6s1", "Content": "EFI", "VolumeName": "EFI", "Size": 209_715_200],
+            ["DeviceIdentifier": "disk6s2", "Content": "Apple_APFS", "Size": 255_850_758_144]]],
+        ["DeviceIdentifier": "disk7", "Content": "FDisk_partition_scheme", "Size": 32_000_000_000, "Partitions": [
+            ["DeviceIdentifier": "disk7s1", "Content": "DOS_FAT_32", "VolumeName": "ONION", "MountPoint": "/Volumes/ONION"]]]]]
+    let data = try PropertyListSerialization.data(fromPropertyList: list, format: .xml, options: 0)
+    #expect(DiskUtil.hasMacPartitions(listPlist: data, disk: "disk6"))
+    #expect(!DiskUtil.hasMacPartitions(listPlist: data, disk: "disk7"))
+    // The EFI partition is never taken as the volume.
+    #expect(!DiskUtil.partitions(listPlist: data, disk: "disk6").contains { $0.name == "EFI" })
+    #expect(DiskUtil.partitions(listPlist: data, disk: "disk7").first?.name == "ONION")
 }
 
 @Test func appVersionOrder() {

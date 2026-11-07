@@ -18,7 +18,7 @@ nonisolated enum DiskService {
         for disk in DiskUtil.wholeDisks(listPlist: list.data) {
             guard let infoRun = try? Shell.run(diskutil, ["info", "-plist", disk], separateErrors: true) else { continue }
             let info = DiskUtil.plist(infoRun.data)
-            guard DiskUtil.isCandidate(info: info) else { continue }
+            guard DiskUtil.isCandidate(info: info), !DiskUtil.hasMacPartitions(listPlist: list.data, disk: disk) else { continue }
             let size = (info["Size"] as? Int64) ?? Int64((info["Size"] as? Int) ?? 0)
             var card = SDCard(device: disk, mediaName: (info["MediaName"] as? String) ?? disk, size: size,
                               isInternalReader: (info["Internal"] as? Bool) == true)
@@ -42,6 +42,14 @@ nonisolated enum DiskService {
     /// Erases the whole disk as one FAT32 partition named ONION (MBR), like RMPARTUSB on Windows.
     nonisolated static func formatFAT32(device: String, onLine: @escaping @Sendable (String) -> Void) throws {
         precondition(device.hasPrefix("disk") && device != "disk0" && device != "disk1", "refusing to format \(device)")
+        // Look again right before erasing: only SD card media, never a Mac disk.
+        guard let list = try? Shell.run(diskutil, ["list", "-plist", "physical"], separateErrors: true),
+              let infoRun = try? Shell.run(diskutil, ["info", "-plist", device], separateErrors: true),
+              DiskUtil.isCandidate(info: DiskUtil.plist(infoRun.data)),
+              !DiskUtil.hasMacPartitions(listPlist: list.data, disk: device)
+        else {
+            throw AppError("/dev/\(device) sieht nicht wie eine SD-Karte aus (kein Wechselmedium oder mit Mac-Partitionen). Formatieren abgebrochen.")
+        }
         let args = ["eraseDisk", "FAT32", "ONION", "MBRFormat", "/dev/\(device)"]
         let result = try Shell.run(diskutil, args, onLine: onLine)
         if result.ok { return }

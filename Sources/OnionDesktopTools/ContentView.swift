@@ -177,7 +177,7 @@ struct ActivityBar: View {
 
 /// Shown on pages that need a mounted card.
 struct NoCardView: View {
-    var detail = "Stecke die SD-Karte in den Kartenleser und wähle sie oben rechts aus."
+    var detail = "Stecke die SD-Karte in den Kartenleser und wähle sie oben rechts aus. Externe SSDs und Festplatten zeigt die App nie an."
 
     var body: some View {
         ContentUnavailableView("Keine SD-Karte", systemImage: "sdcard", description: Text(detail))

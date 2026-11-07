@@ -51,6 +51,7 @@ public enum DiskUtil {
     }
 
     /// Partitions with their mount points, from the same list output.
+    /// EFI and other helper partitions are left out: they are never the card's volume.
     public static func partitions(listPlist data: Data, disk: String) -> [(device: String, mount: String?, name: String?)] {
         let all = (plist(data)["AllDisksAndPartitions"] as? [[String: Any]]) ?? []
         guard let entry = all.first(where: { $0["DeviceIdentifier"] as? String == disk }) else { return [] }
@@ -60,22 +61,41 @@ public enum DiskUtil {
         }
         for part in (entry["Partitions"] as? [[String: Any]]) ?? [] {
             guard let id = part["DeviceIdentifier"] as? String else { continue }
+            if helperContents.contains((part["Content"] as? String) ?? "") { continue }
             result.append((id, part["MountPoint"] as? String, part["VolumeName"] as? String))
         }
         return result.map { (device: $0.0, mount: $0.1, name: $0.2) }
     }
 
-    /// Whether a disk from `diskutil info -plist diskN` may be offered: a removable
-    /// or external physical disk that is not the startup disk and at most 2 TB.
+    /// Partition types that are never an SD card's data.
+    static let helperContents: Set<String> = ["EFI", "Apple_Boot", "Apple_APFS_ISC", "Apple_APFS_Recovery"]
+    /// Partition types of Mac disks (SSDs, Time Machine drives). A Miyoo card never has them.
+    static let macContents: Set<String> = ["Apple_APFS", "Apple_HFS", "Apple_HFSX", "Apple_CoreStorage", "Apple_Boot",
+                                           "Apple_APFS_ISC", "Apple_APFS_Recovery", "Apple_RAID"]
+
+    /// True when the disk has APFS, HFS+, or other Mac partitions.
+    public static func hasMacPartitions(listPlist data: Data, disk: String) -> Bool {
+        let all = (plist(data)["AllDisksAndPartitions"] as? [[String: Any]]) ?? []
+        guard let entry = all.first(where: { $0["DeviceIdentifier"] as? String == disk }) else { return false }
+        if macContents.contains((entry["Content"] as? String) ?? "") { return true }
+        if entry["APFSPhysicalStores"] != nil || entry["APFSVolumes"] != nil { return true }
+        return ((entry["Partitions"] as? [[String: Any]]) ?? []).contains { macContents.contains(($0["Content"] as? String) ?? "") }
+    }
+
+    /// Whether a disk from `diskutil info -plist diskN` may be offered: SD card media only.
+    /// That is removable media (a card in a USB or built-in reader) or a disk on the
+    /// built-in SD bus, physical, not the startup disk, and at most 2 TB (the SDXC limit).
+    /// External SSDs and hard disks are "ejectable" but not removable media, so they never show.
     public static func isCandidate(info: [String: Any]) -> Bool {
         let physical = (info["VirtualOrPhysical"] as? String) != "Virtual"
-        let removable = (info["RemovableMedia"] as? Bool) == true || (info["Removable"] as? Bool) == true
-            || (info["RemovableMediaOrExternalDevice"] as? Bool) == true || (info["Ejectable"] as? Bool) == true
-            || (info["Internal"] as? Bool) == false
+        let protocolName = (info["BusProtocol"] as? String) ?? ""
+        let removableMedia = (info["RemovableMedia"] as? Bool) == true || (info["Removable"] as? Bool) == true
+            || protocolName == "Secure Digital"
         let size = (info["Size"] as? Int64) ?? Int64((info["Size"] as? Int) ?? 0)
         let isSystem = (info["SystemImage"] as? Bool) == true
-        let protocolName = (info["BusProtocol"] as? String) ?? ""
-        return physical && removable && !isSystem && size > 0 && size <= 2_000_000_000_000
-            && protocolName != "Disk Image"
+        let isWholeDisk = (info["WholeDisk"] as? Bool) ?? true
+        let isStartup = (info["DeviceIdentifier"] as? String) == "disk0"
+        return physical && removableMedia && !isSystem && isWholeDisk && !isStartup
+            && size > 0 && size <= 2_000_000_000_000 && protocolName != "Disk Image"
     }
 }
