@@ -5,6 +5,12 @@ import OnionDesktopToolsKit
 /// Finds SD cards and runs diskutil. Every function here blocks: call from a background task.
 nonisolated enum DiskService {
     static let diskutil = "/usr/sbin/diskutil"
+    /// Settings > Allgemein: "Karten bis 512 GB anzeigen".
+    static let largeCardsKey = "cards.large"
+
+    nonisolated static var maxCardSize: Int64 {
+        UserDefaults.standard.bool(forKey: largeCardsKey) ? DiskUtil.largeMaxCardSize : DiskUtil.defaultMaxCardSize
+    }
 
     nonisolated static func listCards() -> [SDCard] {
         var cards: [SDCard] = []
@@ -18,7 +24,7 @@ nonisolated enum DiskService {
         for disk in DiskUtil.wholeDisks(listPlist: list.data) {
             guard let infoRun = try? Shell.run(diskutil, ["info", "-plist", disk], separateErrors: true) else { continue }
             let info = DiskUtil.plist(infoRun.data)
-            guard DiskUtil.isCandidate(info: info), !DiskUtil.hasMacPartitions(listPlist: list.data, disk: disk) else { continue }
+            guard DiskUtil.isCandidate(info: info, maxSize: maxCardSize), !DiskUtil.hasMacPartitions(listPlist: list.data, disk: disk) else { continue }
             let size = (info["Size"] as? Int64) ?? Int64((info["Size"] as? Int) ?? 0)
             var card = SDCard(device: disk, mediaName: (info["MediaName"] as? String) ?? disk, size: size,
                               isInternalReader: (info["Internal"] as? Bool) == true)
@@ -45,10 +51,10 @@ nonisolated enum DiskService {
         // Look again right before erasing: only SD card media, never a Mac disk.
         guard let list = try? Shell.run(diskutil, ["list", "-plist", "physical"], separateErrors: true),
               let infoRun = try? Shell.run(diskutil, ["info", "-plist", device], separateErrors: true),
-              DiskUtil.isCandidate(info: DiskUtil.plist(infoRun.data)),
+              DiskUtil.isCandidate(info: DiskUtil.plist(infoRun.data), maxSize: maxCardSize),
               !DiskUtil.hasMacPartitions(listPlist: list.data, disk: device)
         else {
-            throw AppError("/dev/\(device) sieht nicht wie eine SD-Karte aus (kein Wechselmedium oder mit Mac-Partitionen). Formatieren abgebrochen.")
+            throw AppError("/dev/\(device) sieht nicht wie eine SD-Karte aus (kein Wechselmedium, zu groß oder mit Mac-Partitionen). Formatieren abgebrochen.")
         }
         let args = ["eraseDisk", "FAT32", "ONION", "MBRFormat", "/dev/\(device)"]
         let result = try Shell.run(diskutil, args, onLine: onLine)

@@ -60,8 +60,21 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 struct GeneralSettings: View {
     @AppStorage("cleanMacFiles") private var cleanMacFiles = true
     @AppStorage("playSounds") private var playSounds = true
+    @AppStorage(DiskService.largeCardsKey) private var largeCards = false
+    @Environment(AppModel.self) private var model
 
     var body: some View {
+        Section {
+            Toggle(isOn: $largeCards) {
+                Text("Karten bis 512 GB anzeigen")
+                Text("Sonst zeigt die App nur Karten bis 256 GB. Manche USB-Festplatten melden sich wie ein Kartenleser und würden mit dieser Einstellung erscheinen.")
+            }
+            .onChange(of: largeCards) { Task { await model.refreshCards() } }
+        } header: {
+            Text("SD-Karten")
+        } footer: {
+            Text("Die App zeigt nur Wechselmedien, nie externe SSDs oder Mac-Platten. USB-Sticks kann macOS nicht von einer Karte im USB-Kartenleser unterscheiden.")
+        }
         Section {
             Toggle("macOS-Hilfsdateien nach dem Schreiben entfernen", isOn: $cleanMacFiles)
             Toggle("Ton bei Erfolg und Fehler", isOn: $playSounds)

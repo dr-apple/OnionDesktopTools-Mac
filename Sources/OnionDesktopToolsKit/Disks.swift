@@ -82,11 +82,18 @@ public enum DiskUtil {
         return ((entry["Partitions"] as? [[String: Any]]) ?? []).contains { macContents.contains(($0["Content"] as? String) ?? "") }
     }
 
+    /// Largest disk offered by default: a 256 GB card (cards report a little less than their label).
+    /// Cheap USB hard disk cases report "removable media" like a card reader; their size gives them away.
+    public static let defaultMaxCardSize: Int64 = 260_000_000_000
+    /// With "larger cards" on in Settings: a 512 GB card.
+    public static let largeMaxCardSize: Int64 = 520_000_000_000
+
     /// Whether a disk from `diskutil info -plist diskN` may be offered: SD card media only.
     /// That is removable media (a card in a USB or built-in reader) or a disk on the
-    /// built-in SD bus, physical, not the startup disk, and at most 2 TB (the SDXC limit).
+    /// built-in SD bus, physical, not the startup disk, and at most `maxSize`.
     /// External SSDs and hard disks are "ejectable" but not removable media, so they never show.
-    public static func isCandidate(info: [String: Any]) -> Bool {
+    /// USB sticks look exactly like a card in a USB reader; macOS cannot tell them apart.
+    public static func isCandidate(info: [String: Any], maxSize: Int64 = defaultMaxCardSize) -> Bool {
         let physical = (info["VirtualOrPhysical"] as? String) != "Virtual"
         let protocolName = (info["BusProtocol"] as? String) ?? ""
         let removableMedia = (info["RemovableMedia"] as? Bool) == true || (info["Removable"] as? Bool) == true
@@ -96,6 +103,6 @@ public enum DiskUtil {
         let isWholeDisk = (info["WholeDisk"] as? Bool) ?? true
         let isStartup = (info["DeviceIdentifier"] as? String) == "disk0"
         return physical && removableMedia && !isSystem && isWholeDisk && !isStartup
-            && size > 0 && size <= 2_000_000_000_000 && protocolName != "Disk Image"
+            && size > 0 && size <= maxSize && protocolName != "Disk Image"
     }
 }

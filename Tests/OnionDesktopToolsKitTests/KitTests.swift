@@ -56,6 +56,17 @@ import Testing
     #expect(DiskUtil.isCandidate(info: ["VirtualOrPhysical": "Physical", "BusProtocol": "Secure Digital", "Internal": true, "Size": 64_000_000_000]))
 }
 
+/// A cheap USB hard disk case that reports removable media, like a card reader (500 GB "Generic DISK02").
+@Test func removableHardDiskIsNoCard() {
+    let info: [String: Any] = ["VirtualOrPhysical": "Physical", "RemovableMedia": true, "Removable": true, "Internal": false,
+                               "BusProtocol": "USB", "MediaName": "Generic DISK02", "Size": 500_107_862_016, "DeviceIdentifier": "disk4"]
+    #expect(!DiskUtil.isCandidate(info: info))
+    // 256 GB card in a USB reader still shows, and a 512 GB card with the setting on.
+    #expect(DiskUtil.isCandidate(info: ["VirtualOrPhysical": "Physical", "RemovableMedia": true, "BusProtocol": "USB", "Size": 255_869_321_216]))
+    #expect(DiskUtil.isCandidate(info: ["VirtualOrPhysical": "Physical", "RemovableMedia": true, "BusProtocol": "USB", "Size": 512_110_190_592],
+                                 maxSize: DiskUtil.largeMaxCardSize))
+}
+
 /// A Samsung USB SSD: ejectable and external, but no removable media. It must never be offered.
 @Test func externalSSDIsNoCard() throws {
     let info: [String: Any] = ["VirtualOrPhysical": "Physical", "RemovableMedia": false, "Removable": false,
